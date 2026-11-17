@@ -159,7 +159,7 @@ test('registers both dictation commands with web and desktop defaults', () => {
   assert.ok(hold, 'hold command registered')
   assert.ok(toggle, 'toggle command registered')
   assert.equal(hold.defaults['web:windows'].modifiers.join(','), 'primary,shift')
-  assert.equal(hold.defaults['web:windows'].code, 'KeyM')
+  assert.equal(hold.defaults['web:windows'].code, 'KeyV')
   assert.equal(hold.defaults['desktop:windows'].code, 'F9')
   assert.equal(hold.defaults['desktop:windows'].modifiers.length, 0)
   assert.equal(toggle.defaults['desktop:windows'].code, 'F10')
