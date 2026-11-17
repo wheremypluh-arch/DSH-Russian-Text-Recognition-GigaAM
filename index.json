@@ -108,6 +108,18 @@
           "engines": {
             "dsh": ">=0.2.2-rc.1 <0.3.0"
           }
+        },
+        {
+          "version": "1.2.1",
+          "publishTimestamp": 1794953688,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/wheremypluh-arch/DSH-Russian-Text-Recognition-GigaAM",
+            "commit": "eb55f96b97c5375e62b849fdb1e2b92311a65e41"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.1 <0.3.0"
+          }
         }
       ]
     }
