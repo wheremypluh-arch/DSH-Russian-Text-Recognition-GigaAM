@@ -35,5 +35,5 @@
         wakePhrases: ['эй гигам']
         sendPhrases: ['отправь', 'отправить', 'готово']
         cancelPhrases: ['стоп', 'отмена', 'отмени']
-        sendDelayMs: 1500
+        sendDelayMs: 3000
         delivery: draft

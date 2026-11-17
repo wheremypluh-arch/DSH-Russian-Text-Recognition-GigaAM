@@ -183,7 +183,11 @@ function createRuntime({ transcript = 'привет мир', transcripts, sent =
   const conversation = { send: async (text) => sent.push(text) }
   const composer = { text: '', inserts: [] }
   const shell = {
-    projection: { get clipboardText() { return composer.text } },
+    projection: {
+      get clipboardText() {
+        return composer.text
+      },
+    },
     actions: {
       captureInsertion: () => ({ draftRev: 1, start: composer.text.length, end: composer.text.length }),
       insertText(text) {
@@ -340,7 +344,7 @@ test('voice activation: wake phrase arms dictation, the next phrase is sent', as
   const { scope, counters, state, feed } = createRuntime({
     sent,
     transcripts: ['Эй, Гигам!', 'Купи хлеб.'],
-    config: { sendDelayMs: 30, delivery: 'send' },
+    config: { sendDelayMs: 300, delivery: 'send' },
   })
   const listen = command(scope, 'voice.listen')
   const resolution = listen.resolve()
@@ -363,7 +367,7 @@ test('voice activation: phrase with a tail is sent in one go', async () => {
   const { scope, counters, state, feed } = createRuntime({
     sent,
     transcripts: ['Эй, Гигам, купи хлеб'],
-    config: { sendDelayMs: 30, delivery: 'send' },
+    config: { sendDelayMs: 300, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
   await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
@@ -378,7 +382,7 @@ test('voice activation: Escape stops listening', async () => {
   const { window, scope, counters, state } = createRuntime({
     sent,
     transcripts: ['Эй, Гигам'],
-    config: { sendDelayMs: 30 },
+    config: { sendDelayMs: 300 },
   })
   command(scope, 'voice.listen').resolve().run()
   await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
@@ -395,7 +399,7 @@ test('indicator lamp follows listening, dictation and idle', async () => {
   const { window, scope, counters, state, feed, document } = createRuntime({
     sent,
     transcripts: ['Эй, Гигам'],
-    config: { sendDelayMs: 30 },
+    config: { sendDelayMs: 300 },
     dom: true,
   })
   command(scope, 'voice.listen').resolve().run()
@@ -433,7 +437,7 @@ test('voice activation: merged phrase "Эйгигам" arms dictation', async ()
   const { scope, counters, state, feed } = createRuntime({
     sent,
     transcripts: ['Эйгигам!', 'Купи хлеб.'],
-    config: { sendDelayMs: 30, delivery: 'send' },
+    config: { sendDelayMs: 300, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
   await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
@@ -451,7 +455,7 @@ test('voice activation: one ASR mistake still arms dictation', async () => {
   const { scope, counters, state, feed } = createRuntime({
     sent,
     transcripts: ['Эй, гегам.', 'Купи хлеб.'],
-    config: { sendDelayMs: 30, delivery: 'send' },
+    config: { sendDelayMs: 300, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
   await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
@@ -469,7 +473,7 @@ test('voice activation: filler word before the merged phrase keeps the tail', as
   const { scope, counters, state, feed } = createRuntime({
     sent,
     transcripts: ['Ну, эйгигам, купи хлеб'],
-    config: { sendDelayMs: 30, delivery: 'send' },
+    config: { sendDelayMs: 300, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
   await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
@@ -477,6 +481,26 @@ test('voice activation: filler word before the merged phrase keeps the tail', as
   feed([...speech(), ...silence()])
   await waitFor(() => sent.length === 1, 'the tail to be sent')
   assert.deepEqual(sent, ['купи хлеб'])
+})
+
+test('voice activation: a three-second silence flushes dictation without a stop word', async () => {
+  const sent = []
+  const { scope, counters, state, feed } = createRuntime({
+    sent,
+    transcripts: ['Эй, Гигам', 'Купи хлеб.'],
+    config: { sendDelayMs: 120, delivery: 'send' },
+  })
+  command(scope, 'voice.listen').resolve().run()
+  await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
+
+  feed([...speech(), ...silence()])
+  await waitFor(() => counters.requests.length === 1, 'wake phrase transcription')
+  await sleep(20)
+
+  // One phrase, then nothing: the idle timer must deliver it on its own.
+  feed([...speech(), ...silence(12)])
+  await waitFor(() => sent.length === 1, 'the idle flush to send the text')
+  assert.deepEqual(sent, ['Купи хлеб.'])
 })
 
 test('package manifest exposes the client bundle under the package id', () => {
