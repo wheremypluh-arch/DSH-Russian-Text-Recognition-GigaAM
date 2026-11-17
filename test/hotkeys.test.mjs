@@ -181,7 +181,26 @@ function createRuntime({ transcript = 'привет мир', transcripts, sent =
   vm.runInContext(SOURCE, sandbox, { filename: 'client.js' })
 
   const conversation = { send: async (text) => sent.push(text) }
+  const composer = { text: '', inserts: [] }
+  const shell = {
+    projection: { get clipboardText() { return composer.text } },
+    actions: {
+      captureInsertion: () => ({ draftRev: 1, start: composer.text.length, end: composer.text.length }),
+      insertText(text) {
+        composer.text += text
+        composer.inserts.push(text)
+        return true
+      },
+    },
+    setDraft(text) {
+      composer.text = text
+    },
+  }
+  const inputHub = { shell: (id) => (id === 's1' ? shell : undefined) }
   const scope = {
+    get(name) {
+      return name === 'conversation.input' ? inputHub : undefined
+    },
     effect(fn) {
       return fn()
     },
@@ -218,7 +237,7 @@ function createRuntime({ transcript = 'привет мир', transcripts, sent =
     for (const frame of frames) processor.onaudioprocess({ inputBuffer: { getChannelData: () => frame } })
   }
 
-  return { window, scope, counters, state, feed, document }
+  return { window, scope, counters, state, feed, document, composer }
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -252,7 +271,7 @@ test('registers dictation and listener commands with web and desktop defaults', 
 
 test('push-to-talk: press, speak, release sends the transcript', async () => {
   const sent = []
-  const { window, scope, counters } = createRuntime({ sent })
+  const { window, scope, counters } = createRuntime({ sent, config: { delivery: 'send' } })
   const hold = command(scope, 'voice.dictateHold')
 
   window.dispatch('keydown', { code: 'KeyV', repeat: false })
@@ -272,7 +291,7 @@ test('push-to-talk: press, speak, release sends the transcript', async () => {
 
 test('push-to-talk ignores the release of an unrelated key', async () => {
   const sent = []
-  const { window, scope, counters } = createRuntime({ sent })
+  const { window, scope, counters } = createRuntime({ sent, config: { delivery: 'send' } })
   const hold = command(scope, 'voice.dictateHold')
 
   window.dispatch('keydown', { code: 'KeyV', repeat: false })
@@ -289,7 +308,7 @@ test('push-to-talk ignores the release of an unrelated key', async () => {
 
 test('toggle: first press records, second press sends', async () => {
   const sent = []
-  const { scope, counters } = createRuntime({ sent })
+  const { scope, counters } = createRuntime({ sent, config: { delivery: 'send' } })
   const toggle = command(scope, 'voice.dictateToggle')
 
   toggle.resolve().run()
@@ -304,7 +323,7 @@ test('toggle: first press records, second press sends', async () => {
 
 test('an empty transcript is not sent', async () => {
   const sent = []
-  const { window, scope, counters } = createRuntime({ sent, transcript: '' })
+  const { window, scope, counters } = createRuntime({ sent, transcript: '', config: { delivery: 'send' } })
   const hold = command(scope, 'voice.dictateHold')
 
   window.dispatch('keydown', { code: 'KeyV', repeat: false })
@@ -321,7 +340,7 @@ test('voice activation: wake phrase arms dictation, the next phrase is sent', as
   const { scope, counters, state, feed } = createRuntime({
     sent,
     transcripts: ['Эй, Гигам!', 'Купи хлеб.'],
-    config: { sendDelayMs: 30 },
+    config: { sendDelayMs: 30, delivery: 'send' },
   })
   const listen = command(scope, 'voice.listen')
   const resolution = listen.resolve()
@@ -344,7 +363,7 @@ test('voice activation: phrase with a tail is sent in one go', async () => {
   const { scope, counters, state, feed } = createRuntime({
     sent,
     transcripts: ['Эй, Гигам, купи хлеб'],
-    config: { sendDelayMs: 30 },
+    config: { sendDelayMs: 30, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
   await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
@@ -392,6 +411,21 @@ test('indicator lamp follows listening, dictation and idle', async () => {
 
   window.dispatch('keydown', { code: 'Escape', repeat: false })
   await waitFor(() => lamp.dataset.visible === 'false', 'the lamp to hide')
+})
+
+test('draft delivery: dictation fills the composer instead of sending', async () => {
+  const sent = []
+  const { window, scope, counters, composer } = createRuntime({ sent })
+  const hold = command(scope, 'voice.dictateHold')
+
+  window.dispatch('keydown', { code: 'KeyV', repeat: false })
+  hold.resolve().run()
+  await waitFor(() => counters.recorderStarts === 1, 'recording to start')
+  window.dispatch('keyup', { code: 'KeyV' })
+  await waitFor(() => composer.inserts.length === 1, 'the text to reach the composer')
+
+  assert.deepEqual(sent, [], 'nothing is sent automatically')
+  assert.equal(composer.text, 'привет мир')
 })
 
 test('package manifest exposes the client bundle under the package id', () => {

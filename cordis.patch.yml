@@ -36,3 +36,4 @@
         sendPhrases: ['отправь', 'отправить', 'готово']
         cancelPhrases: ['стоп', 'отмена', 'отмени']
         sendDelayMs: 1500
+        delivery: draft
