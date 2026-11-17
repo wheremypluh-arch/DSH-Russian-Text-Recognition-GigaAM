@@ -415,7 +415,7 @@ test('indicator lamp follows listening, dictation and idle', async () => {
   assert.equal(lamp.lastElementChild.textContent, 'Скажите: «Эй Гига!»')
 
   feed([...speech(), ...silence()])
-  await waitFor(() => lamp.lastElementChild.textContent === 'диктовка', 'dictation lamp state')
+  await waitFor(() => lamp.lastElementChild.textContent === 'Слушаю очень внимательно…', 'dictation lamp state')
 
   window.dispatch('keydown', { code: 'Escape', repeat: false })
   await waitFor(() => lamp.dataset.visible === 'false', 'the lamp to hide')
