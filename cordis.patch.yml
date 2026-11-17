@@ -32,8 +32,8 @@
     - id: voice-hotkeys
       name: dsh-voice-ru
       config:
-        wakePhrases: ['эй гигам']
+        wakePhrases: ['эй гига']
         sendPhrases: ['отправь', 'отправить', 'готово']
         cancelPhrases: ['стоп', 'отмена', 'отмени']
-        sendDelayMs: 3000
+        sendDelayMs: 5000
         delivery: draft

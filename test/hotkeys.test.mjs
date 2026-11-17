@@ -181,7 +181,7 @@ function createRuntime({ transcript = 'привет мир', transcripts, sent =
   vm.runInContext(SOURCE, sandbox, { filename: 'client.js' })
 
   const conversation = { send: async (text) => sent.push(text) }
-  const composer = { text: '', inserts: [] }
+  const composer = { text: '', inserts: [], submits: [] }
   const shell = {
     projection: {
       get clipboardText() {
@@ -194,6 +194,10 @@ function createRuntime({ transcript = 'привет мир', transcripts, sent =
         composer.text += text
         composer.inserts.push(text)
         return true
+      },
+      submit() {
+        composer.submits.push(composer.text)
+        composer.text = ''
       },
     },
     setDraft(text) {
@@ -343,7 +347,7 @@ test('voice activation: wake phrase arms dictation, the next phrase is sent', as
   const sent = []
   const { scope, counters, state, feed } = createRuntime({
     sent,
-    transcripts: ['Эй, Гигам!', 'Купи хлеб.'],
+    transcripts: ['Эй, Гига!', 'Купи хлеб.'],
     config: { sendDelayMs: 300, delivery: 'send' },
   })
   const listen = command(scope, 'voice.listen')
@@ -366,7 +370,7 @@ test('voice activation: phrase with a tail is sent in one go', async () => {
   const sent = []
   const { scope, counters, state, feed } = createRuntime({
     sent,
-    transcripts: ['Эй, Гигам, купи хлеб'],
+    transcripts: ['Эй, Гига, купи хлеб'],
     config: { sendDelayMs: 300, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
@@ -381,7 +385,7 @@ test('voice activation: Escape stops listening', async () => {
   const sent = []
   const { window, scope, counters, state } = createRuntime({
     sent,
-    transcripts: ['Эй, Гигам'],
+    transcripts: ['Эй, Гига'],
     config: { sendDelayMs: 300 },
   })
   command(scope, 'voice.listen').resolve().run()
@@ -398,7 +402,7 @@ test('indicator lamp follows listening, dictation and idle', async () => {
   const sent = []
   const { window, scope, counters, state, feed, document } = createRuntime({
     sent,
-    transcripts: ['Эй, Гигам'],
+    transcripts: ['Эй, Гига'],
     config: { sendDelayMs: 300 },
     dom: true,
   })
@@ -432,11 +436,11 @@ test('draft delivery: dictation fills the composer instead of sending', async ()
   assert.equal(composer.text, 'привет мир')
 })
 
-test('voice activation: merged phrase "Эйгигам" arms dictation', async () => {
+test('voice activation: merged phrase "Эйгига" arms dictation', async () => {
   const sent = []
   const { scope, counters, state, feed } = createRuntime({
     sent,
-    transcripts: ['Эйгигам!', 'Купи хлеб.'],
+    transcripts: ['Эйгига!', 'Купи хлеб.'],
     config: { sendDelayMs: 300, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
@@ -454,7 +458,7 @@ test('voice activation: one ASR mistake still arms dictation', async () => {
   const sent = []
   const { scope, counters, state, feed } = createRuntime({
     sent,
-    transcripts: ['Эй, гегам.', 'Купи хлеб.'],
+    transcripts: ['Эй, гега.', 'Купи хлеб.'],
     config: { sendDelayMs: 300, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
@@ -472,7 +476,7 @@ test('voice activation: filler word before the merged phrase keeps the tail', as
   const sent = []
   const { scope, counters, state, feed } = createRuntime({
     sent,
-    transcripts: ['Ну, эйгигам, купи хлеб'],
+    transcripts: ['Ну, эйгига, купи хлеб'],
     config: { sendDelayMs: 300, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
@@ -487,7 +491,7 @@ test('voice activation: a three-second silence flushes dictation without a stop 
   const sent = []
   const { scope, counters, state, feed } = createRuntime({
     sent,
-    transcripts: ['Эй, Гигам', 'Купи хлеб.'],
+    transcripts: ['Эй, Гига', 'Купи хлеб.'],
     config: { sendDelayMs: 120, delivery: 'send' },
   })
   command(scope, 'voice.listen').resolve().run()
@@ -501,6 +505,42 @@ test('voice activation: a three-second silence flushes dictation without a stop 
   feed([...speech(), ...silence(12)])
   await waitFor(() => sent.length === 1, 'the idle flush to send the text')
   assert.deepEqual(sent, ['Купи хлеб.'])
+})
+
+test('voice command: "Отправить" in listening submits the composer', async () => {
+  const sent = []
+  const { scope, counters, state, feed, composer } = createRuntime({
+    sent,
+    transcripts: ['Отправить'],
+    config: { sendDelayMs: 300 },
+  })
+  command(scope, 'voice.listen').resolve().run()
+  await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
+
+  composer.text = 'купи хлеб'
+  feed([...speech(), ...silence()])
+  await waitFor(() => composer.submits.length === 1, 'the composer to be submitted')
+  assert.deepEqual(composer.submits, ['купи хлеб'])
+})
+
+test('voice command: "Отправить" after dictation sends the composed text', async () => {
+  const sent = []
+  const { scope, counters, state, feed, composer } = createRuntime({
+    sent,
+    transcripts: ['Эй, Гига', 'Купи хлеб.', 'Отправить'],
+    config: { sendDelayMs: 300 },
+  })
+  command(scope, 'voice.listen').resolve().run()
+  await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
+
+  feed([...speech(), ...silence()])
+  await waitFor(() => counters.requests.length === 1, 'wake phrase transcription')
+  await sleep(20)
+  feed([...speech(), ...silence()])
+  await waitFor(() => counters.requests.length === 2, 'dictated phrase transcription')
+  feed([...speech(), ...silence()])
+  await waitFor(() => composer.submits.length === 1, 'the composed text to be submitted')
+  assert.deepEqual(composer.submits, ['Купи хлеб.'])
 })
 
 test('package manifest exposes the client bundle under the package id', () => {

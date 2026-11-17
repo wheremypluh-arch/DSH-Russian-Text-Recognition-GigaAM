@@ -1,6 +1,6 @@
 {
   "name": "dsh-voice-ru",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "private": true,
   "description": "Русский голосовой ввод для DeepSeek Harness: локальный GigaAM v3 на CPU, оффлайн, без ключей",
   "type": "module",
