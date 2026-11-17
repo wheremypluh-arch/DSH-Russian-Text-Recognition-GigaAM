@@ -412,7 +412,7 @@ test('indicator lamp follows listening, dictation and idle', async () => {
   const lamp = document.getElementById('dsh-voice-ru-indicator')
   assert.ok(lamp, 'the lamp element exists')
   assert.equal(lamp.dataset.visible, 'true')
-  assert.equal(lamp.lastElementChild.textContent, 'слушаю «эй гигам»')
+  assert.equal(lamp.lastElementChild.textContent, 'Скажите: «Эй Гига!»')
 
   feed([...speech(), ...silence()])
   await waitFor(() => lamp.lastElementChild.textContent === 'диктовка', 'dictation lamp state')
