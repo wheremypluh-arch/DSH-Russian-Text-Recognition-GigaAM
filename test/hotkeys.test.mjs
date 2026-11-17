@@ -12,7 +12,7 @@ const CATALOG = {
   maxAudioBytes: 20 * 1024 * 1024,
   maxDurationSeconds: 600,
   selection: { providerId: 'gigaam-local', language: 'ru' },
-  providers: [],
+  providers: [{ id: 'gigaam-local', preparation: { phase: 'unprepared' } }],
 }
 
 const FRAME = 2048 // 128 ms at 16 kHz
@@ -50,7 +50,7 @@ function createWindow() {
 
 function createRuntime({ transcript = 'привет мир', transcripts, sent = [], config, dom = false } = {}) {
   const window = createWindow()
-  const counters = { recorderStarts: 0, requests: [] }
+  const counters = { recorderStarts: 0, requests: [], prepares: [] }
   const state = { processor: undefined }
   const queue = transcripts === undefined ? undefined : [...transcripts]
 
@@ -223,6 +223,10 @@ function createRuntime({ transcript = 'привет мир', transcripts, sent =
       speech: {
         async catalog() {
           return { ok: true, value: CATALOG }
+        },
+        async prepare(providerId) {
+          counters.prepares.push(providerId)
+          return { ok: true, value: undefined }
         },
         async transcribe(request) {
           counters.requests.push(request)
@@ -398,7 +402,7 @@ test('voice activation: Escape stops listening', async () => {
   assert.deepEqual(sent, [])
 })
 
-test('indicator lamp follows listening, dictation and idle', async () => {
+test('indicator lamp follows listening, dictation, level and idle', async () => {
   const sent = []
   const { window, scope, counters, state, feed, document } = createRuntime({
     sent,
@@ -412,13 +416,26 @@ test('indicator lamp follows listening, dictation and idle', async () => {
   const lamp = document.getElementById('dsh-voice-ru-indicator')
   assert.ok(lamp, 'the lamp element exists')
   assert.equal(lamp.dataset.visible, 'true')
-  assert.equal(lamp.lastElementChild.textContent, 'Скажите: «Эй Гига!»')
+  const label = lamp.children[1]
+  const level = lamp.children[2]
+  assert.equal(label.textContent, 'Скажите: «Эй Гига!»')
+  assert.equal(level.dataset.active, 'true')
 
-  feed([...speech(), ...silence()])
-  await waitFor(() => lamp.lastElementChild.textContent === 'Слушаю очень внимательно…', 'dictation lamp state')
+  feed(speech())
+  await waitFor(() => level.children.some((bar) => bar.style.opacity === '1'), 'the level bars to light up')
+
+  feed(silence())
+  await waitFor(() => label.textContent === 'Слушаю очень внимательно…', 'dictation lamp state')
 
   window.dispatch('keydown', { code: 'Escape', repeat: false })
   await waitFor(() => lamp.dataset.visible === 'false', 'the lamp to hide')
+})
+
+test('listening preloads the selected provider', async () => {
+  const { scope, counters } = createRuntime({ transcripts: ['Эй, Гига'] })
+  command(scope, 'voice.listen').resolve().run()
+  await waitFor(() => counters.prepares.length === 1, 'the warm-up call')
+  assert.deepEqual(counters.prepares, ['gigaam-local'])
 })
 
 test('draft delivery: dictation fills the composer instead of sending', async () => {
