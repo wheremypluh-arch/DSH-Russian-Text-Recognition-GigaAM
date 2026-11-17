@@ -91,7 +91,7 @@
           "source": {
             "type": "git",
             "url": "https://github.com/wheremypluh-arch/DSH-Russian-Text-Recognition-GigaAM",
-            "commit": "44868c2"
+            "commit": "1b9045894fb0b88d0d0d7757399ce8b56289587e"
           },
           "engines": {
             "dsh": ">=0.2.2-rc.1 <0.3.0"
