@@ -32,7 +32,7 @@
     - id: voice-hotkeys
       name: dsh-voice-ru
       config:
-        wakePhrases: ['гигам слушай', 'слушай гигам']
+        wakePhrases: ['эй гигам']
         sendPhrases: ['отправь', 'отправить', 'готово']
         cancelPhrases: ['стоп', 'отмена', 'отмени']
         sendDelayMs: 1500

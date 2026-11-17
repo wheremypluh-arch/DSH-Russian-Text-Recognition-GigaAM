@@ -275,7 +275,7 @@ test('voice activation: wake phrase arms dictation, the next phrase is sent', as
   const sent = []
   const { scope, counters, state, feed } = createRuntime({
     sent,
-    transcripts: ['Гигаам, слушай!', 'Купи хлеб.'],
+    transcripts: ['Эй, Гигам!', 'Купи хлеб.'],
     config: { sendDelayMs: 30 },
   })
   const listen = command(scope, 'voice.listen')
@@ -298,7 +298,7 @@ test('voice activation: phrase with a tail is sent in one go', async () => {
   const sent = []
   const { scope, counters, state, feed } = createRuntime({
     sent,
-    transcripts: ['Гигаам, слушай, купи хлеб'],
+    transcripts: ['Эй, Гигам, купи хлеб'],
     config: { sendDelayMs: 30 },
   })
   command(scope, 'voice.listen').resolve().run()
@@ -313,7 +313,7 @@ test('voice activation: Escape stops listening', async () => {
   const sent = []
   const { window, scope, counters, state } = createRuntime({
     sent,
-    transcripts: ['Гигаам, слушай'],
+    transcripts: ['Эй, Гигам'],
     config: { sendDelayMs: 30 },
   })
   command(scope, 'voice.listen').resolve().run()
