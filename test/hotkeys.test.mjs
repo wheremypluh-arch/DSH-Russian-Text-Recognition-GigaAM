@@ -48,11 +48,55 @@ function createWindow() {
   return window
 }
 
-function createRuntime({ transcript = 'привет мир', transcripts, sent = [], config } = {}) {
+function createRuntime({ transcript = 'привет мир', transcripts, sent = [], config, dom = false } = {}) {
   const window = createWindow()
   const counters = { recorderStarts: 0, requests: [] }
   const state = { processor: undefined }
   const queue = transcripts === undefined ? undefined : [...transcripts]
+
+  const createDocument = () => {
+    const byId = new Map()
+    const make = (tag) => {
+      const node = {
+        tagName: tag,
+        id: '',
+        className: '',
+        style: {},
+        dataset: {},
+        children: [],
+        parentNode: null,
+        firstElementChild: undefined,
+        lastElementChild: undefined,
+        textContent: '',
+        setAttribute(name, value) {
+          this[name] = value
+        },
+        appendChild(child) {
+          child.parentNode = this
+          this.children.push(child)
+          this.firstElementChild = this.children[0]
+          this.lastElementChild = this.children[this.children.length - 1]
+          if (child.id) byId.set(child.id, child)
+          return child
+        },
+        removeChild(child) {
+          this.children = this.children.filter((entry) => entry !== child)
+          child.parentNode = null
+          this.firstElementChild = this.children[0]
+          this.lastElementChild = this.children[this.children.length - 1]
+          if (child.id) byId.delete(child.id)
+        },
+      }
+      return node
+    }
+    return {
+      body: make('body'),
+      head: make('head'),
+      createElement: (tag) => make(tag),
+      getElementById: (id) => byId.get(id) ?? null,
+    }
+  }
+  const document = dom ? createDocument() : undefined
 
   class FakeRecorder {
     constructor(stream) {
@@ -124,6 +168,7 @@ function createRuntime({ transcript = 'привет мир', transcripts, sent =
     MediaRecorder: FakeRecorder,
     AudioContext: FakeAudioContext,
     OfflineAudioContext: FakeOfflineAudioContext,
+    ...(document === undefined ? {} : { document }),
     navigator: {
       mediaDevices: {
         async getUserMedia() {
@@ -173,7 +218,7 @@ function createRuntime({ transcript = 'привет мир', transcripts, sent =
     for (const frame of frames) processor.onaudioprocess({ inputBuffer: { getChannelData: () => frame } })
   }
 
-  return { window, scope, counters, state, feed }
+  return { window, scope, counters, state, feed, document }
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -324,6 +369,29 @@ test('voice activation: Escape stops listening', async () => {
   await sleep(40)
   assert.equal(counters.requests.length, 0, 'a stopped listener must not transcribe')
   assert.deepEqual(sent, [])
+})
+
+test('indicator lamp follows listening, dictation and idle', async () => {
+  const sent = []
+  const { window, scope, counters, state, feed, document } = createRuntime({
+    sent,
+    transcripts: ['Эй, Гигам'],
+    config: { sendDelayMs: 30 },
+    dom: true,
+  })
+  command(scope, 'voice.listen').resolve().run()
+  await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
+
+  const lamp = document.getElementById('dsh-voice-ru-indicator')
+  assert.ok(lamp, 'the lamp element exists')
+  assert.equal(lamp.dataset.visible, 'true')
+  assert.equal(lamp.lastElementChild.textContent, 'слушаю «эй гигам»')
+
+  feed([...speech(), ...silence()])
+  await waitFor(() => lamp.lastElementChild.textContent === 'диктовка', 'dictation lamp state')
+
+  window.dispatch('keydown', { code: 'Escape', repeat: false })
+  await waitFor(() => lamp.dataset.visible === 'false', 'the lamp to hide')
 })
 
 test('package manifest exposes the client bundle under the package id', () => {
