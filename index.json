@@ -1,0 +1,91 @@
+{
+  "format": 1,
+  "title": {
+    "en": "MEGASTREAM DSH plugins",
+    "ru": "Плагины MEGASTREAM для DSH"
+  },
+  "description": {
+    "en": "Local plugins for DeepSeek Harness used on the MEGASTREAM workstation.",
+    "ru": "Локальные плагины для DeepSeek Harness со стенда MEGASTREAM."
+  },
+  "metadata": {
+    "categories": {
+      "voice": {
+        "title": {
+          "en": "Voice input",
+          "ru": "Голосовой ввод"
+        }
+      }
+    },
+    "labels": {
+      "russian": {
+        "title": {
+          "en": "Russian",
+          "ru": "Русский"
+        }
+      },
+      "offline": {
+        "title": {
+          "en": "Offline",
+          "ru": "Оффлайн"
+        }
+      },
+      "local": {
+        "title": {
+          "en": "Local runtime",
+          "ru": "Локальный рантайм"
+        }
+      }
+    },
+    "sortKeys": {}
+  },
+  "plugins": [
+    {
+      "name": "dsh-voice-ru",
+      "title": {
+        "en": "Russian voice input (GigaAM v3)",
+        "ru": "Русский голосовой ввод (GigaAM v3)"
+      },
+      "description": {
+        "en": "Offline Russian dictation into the composer: GigaAM v3 on CPU via sherpa-onnx, punctuation and numbers, no API keys.",
+        "ru": "Оффлайн-диктовка по-русски прямо в поле ввода: GigaAM v3 на CPU через sherpa-onnx, пунктуация и цифры, без API-ключей."
+      },
+      "author": "wheremypluh-arch",
+      "homepage": "https://github.com/wheremypluh-arch/DSH-Russian-Text-Recognition-GigaAM",
+      "repository": {
+        "url": "https://github.com/wheremypluh-arch/DSH-Russian-Text-Recognition-GigaAM"
+      },
+      "metadata": {
+        "category": "voice",
+        "keywords": [
+          "dsh",
+          "dsh-plugin",
+          "dsh-bundle",
+          "voice-input",
+          "speech-to-text",
+          "russian",
+          "gigaam",
+          "sherpa-onnx",
+          "offline",
+          "cpu"
+        ],
+        "labels": ["russian", "offline", "local"],
+        "sortKeys": {}
+      },
+      "versions": [
+        {
+          "version": "1.0.0",
+          "publishTimestamp": 1794949015,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/wheremypluh-arch/DSH-Russian-Text-Recognition-GigaAM",
+            "commit": "218b251e11a29d379c5c3d3f08de71f6a20fe609"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.1 <0.3.0"
+          }
+        }
+      ]
+    }
+  ]
+}
