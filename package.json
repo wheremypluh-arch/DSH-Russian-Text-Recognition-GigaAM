@@ -1,0 +1,53 @@
+{
+  "name": "dsh-voice-ru",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Русский голосовой ввод для DeepSeek Harness: локальный GigaAM v3 на CPU, оффлайн, без ключей",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "dsh-gigaam-stt": "^1.1.1"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "dsh-bundle",
+    "voice-input",
+    "speech-to-text",
+    "russian",
+    "gigaam",
+    "sherpa-onnx",
+    "offline",
+    "cpu"
+  ],
+  "author": "wheremypluh-arch",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wheremypluh-arch/DSH-Russian-Text-Recognition-GigaAM.git",
+    "directory": ""
+  },
+  "homepage": "https://github.com/wheremypluh-arch/DSH-Russian-Text-Recognition-GigaAM#readme",
+  "bugs": {
+    "url": "https://github.com/wheremypluh-arch/DSH-Russian-Text-Recognition-GigaAM/issues"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

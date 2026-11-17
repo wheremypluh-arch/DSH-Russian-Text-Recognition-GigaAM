@@ -1,0 +1,27 @@
+# dsh-voice-ru: монтирует русский голосовой ввод (GigaAM v3, локально, CPU).
+#
+# Набор самодостаточный: сервис распознавания, локальный провайдер gigaam-local,
+# Remote для браузера и кнопка микрофона в композере.
+#
+# ВАЖНО: не включайте одновременно @deepseek-ai/dsh-experimental-voice-input-bundle.
+# Оба бандла вставляют строку с id `speech-to-text`, композиция профиля упадёт на
+# дубликате id. Этот бандл заменяет официальный voice input целиком.
+#
+# Ограничение по памяти на запись поднято с штатных 120 с / 4 МиБ до 600 с / 20 МиБ.
+- insert:
+    - id: speech-to-text
+      name: '@deepseek-ai/dsh-experimental-speech-to-text'
+      config:
+        defaultProvider: gigaam-local
+        language: ru
+    - id: speech-to-text-gigaam
+      name: dsh-gigaam-stt
+      config:
+        dataRoot: !!js dshHomePath('speech-to-text', 'gigaam')
+    - id: api-speech-to-text
+      name: '@deepseek-ai/dsh-experimental-api-speech-to-text'
+      config:
+        maxAudioBytes: 20971520
+        maxDurationSeconds: 600
+    - id: ui-voice-input
+      name: '@deepseek-ai/dsh-experimental-client-ui-voice-input'
