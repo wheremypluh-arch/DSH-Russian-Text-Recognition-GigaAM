@@ -428,6 +428,57 @@ test('draft delivery: dictation fills the composer instead of sending', async ()
   assert.equal(composer.text, 'привет мир')
 })
 
+test('voice activation: merged phrase "Эйгигам" arms dictation', async () => {
+  const sent = []
+  const { scope, counters, state, feed } = createRuntime({
+    sent,
+    transcripts: ['Эйгигам!', 'Купи хлеб.'],
+    config: { sendDelayMs: 30, delivery: 'send' },
+  })
+  command(scope, 'voice.listen').resolve().run()
+  await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
+
+  feed([...speech(), ...silence()])
+  await waitFor(() => counters.requests.length === 1, 'wake phrase transcription')
+  await sleep(20)
+  feed([...speech(), ...silence()])
+  await waitFor(() => sent.length === 1, 'the dictated phrase to be sent')
+  assert.deepEqual(sent, ['Купи хлеб.'])
+})
+
+test('voice activation: one ASR mistake still arms dictation', async () => {
+  const sent = []
+  const { scope, counters, state, feed } = createRuntime({
+    sent,
+    transcripts: ['Эй, гегам.', 'Купи хлеб.'],
+    config: { sendDelayMs: 30, delivery: 'send' },
+  })
+  command(scope, 'voice.listen').resolve().run()
+  await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
+
+  feed([...speech(), ...silence()])
+  await waitFor(() => counters.requests.length === 1, 'wake phrase transcription')
+  await sleep(20)
+  feed([...speech(), ...silence()])
+  await waitFor(() => sent.length === 1, 'the dictated phrase to be sent')
+  assert.deepEqual(sent, ['Купи хлеб.'])
+})
+
+test('voice activation: filler word before the merged phrase keeps the tail', async () => {
+  const sent = []
+  const { scope, counters, state, feed } = createRuntime({
+    sent,
+    transcripts: ['Ну, эйгигам, купи хлеб'],
+    config: { sendDelayMs: 30, delivery: 'send' },
+  })
+  command(scope, 'voice.listen').resolve().run()
+  await waitFor(() => typeof state.processor?.onaudioprocess === 'function', 'listener start')
+
+  feed([...speech(), ...silence()])
+  await waitFor(() => sent.length === 1, 'the tail to be sent')
+  assert.deepEqual(sent, ['купи хлеб'])
+})
+
 test('package manifest exposes the client bundle under the package id', () => {
   const root = new URL('..', import.meta.url)
   const manifest = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'))
